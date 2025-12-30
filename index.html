@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>諮心好友 - 實驗入口 (Ablation Study Portal)</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&family=M+PLUS+Rounded+1c:wght@400;700&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'M PLUS Rounded 1c', 'Noto Sans TC', sans-serif;
+            background-color: #FDFBF7; /* 溫暖米白 */
+            color: #4A5568;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* --------------------------------------------------
+           Logo & Header
+           -------------------------------------------------- */
+        .logo-wrapper {
+            width: 100px;
+            height: 100px;
+            background: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            margin: 0 auto 1.5rem auto;
+            border: 3px solid #fff;
+        }
+        
+        .logo-img {
+            width: 85%;
+            height: 85%;
+            object-fit: contain;
+            border-radius: 50%;
+        }
+
+        /* --------------------------------------------------
+           Grid Layout for 4 Experiments
+           -------------------------------------------------- */
+        .experiment-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1.5rem;
+            max-width: 1000px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        @media (min-width: 768px) {
+            .experiment-grid {
+                grid-template-columns: 1fr 1fr; /* 2x2 Layout */
+            }
+        }
+
+        /* --------------------------------------------------
+           Card Design
+           -------------------------------------------------- */
+        .card {
+            background: white;
+            border-radius: 20px;
+            padding: 2rem;
+            position: relative;
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            border: 1px solid rgba(0,0,0,0.03);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            cursor: pointer;
+            text-decoration: none;
+            overflow: hidden;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 30px -5px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Color Themes for Groups */
+        
+        /* 1. CBT (Blue) */
+        .theme-cbt .icon-box { background: #EBF8FF; color: #3182CE; }
+        .theme-cbt:hover { border-color: #90CDF4; }
+        .theme-cbt .badge { background: #EBF8FF; color: #2B6CB0; }
+
+        /* 2. DBT (Pink) */
+        .theme-dbt .icon-box { background: #FFF5F7; color: #D53F8C; }
+        .theme-dbt:hover { border-color: #FBB6CE; }
+        .theme-dbt .badge { background: #FFF5F7; color: #B83280; }
+
+        /* 3. Integrate (Teal) */
+        .theme-smart { 
+            background: linear-gradient(to bottom right, #ffffff, #F0FDFA); 
+            border: 2px solid #B2F5EA; /* Highlight border */
+        }
+        .theme-smart .icon-box { background: #E6FFFA; color: #319795; }
+        .theme-smart:hover { border-color: #319795; }
+        .theme-smart .badge { background: #E6FFFA; color: #285E61; }
+
+        /* 4. General (Gray) */
+        .theme-control .icon-box { background: #F7FAFC; color: #718096; }
+        .theme-control:hover { border-color: #CBD5E0; }
+        .theme-control .badge { background: #EDF2F7; color: #4A5568; }
+
+        /* Icon Styling */
+        .icon-box {
+            width: 60px;
+            height: 60px;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            margin-bottom: 1.25rem;
+            transition: transform 0.3s ease;
+        }
+        .card:hover .icon-box { transform: scale(1.1) rotate(5deg); }
+
+        /* Typography */
+        .card-title { font-size: 1.25rem; font-weight: 700; color: #2D3748; margin-bottom: 0.5rem; }
+        .card-desc { font-size: 0.95rem; color: #718096; line-height: 1.6; flex-grow: 1; }
+        
+        /* File Tag */
+        .file-tag {
+            font-family: 'Menlo', 'Monaco', monospace;
+            font-size: 0.75rem;
+            color: #A0AEC0;
+            margin-top: 1.5rem;
+            text-align: right;
+            border-top: 1px solid #edf2f7;
+            padding-top: 0.75rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .badge {
+            font-size: 0.7rem;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+    </style>
+</head>
+<body class="px-6 py-12">
+
+    <!-- Header -->
+    <header class="text-center mb-12">
+        <div class="logo-wrapper">
+            <img src="https://raw.githubusercontent.com/nycu-cirda/consultation_web_app_mvp/main/media/logo.png" alt="Logo" class="logo-img">
+        </div>
+        <h1 class="text-3xl font-bold text-gray-800 mb-2">諮心好友</h1>
+        <p class="text-gray-500 font-medium">校園心理支持聊天機器人 - 消融實驗入口</p>
+        <div class="mt-4 flex justify-center gap-2">
+            <span class="px-3 py-1 bg-gray-100 rounded-full text-xs text-gray-500">MVP v1.0</span>
+            <span class="px-3 py-1 bg-gray-100 rounded-full text-xs text-gray-500">Pixel 7 模擬</span>
+        </div>
+    </header>
+
+    <!-- Main Grid: 2x2 Layout -->
+    <main class="experiment-grid">
+
+        <!-- Experiment 1: CBT Only -->
+        <a href="CBT.html" class="card theme-cbt">
+            <div class="flex justify-between items-start">
+                <div class="icon-box">
+                    <i class="fas fa-brain"></i>
+                </div>
+                <span class="badge">Condition A</span>
+            </div>
+            <h2 class="card-title">CBT 認知引導組</h2>
+            <p class="card-desc">
+                專注於「理性認知重構」。<br>
+                引導使用者識別認知扭曲（如災難化思考），並透過蘇格拉底式提問找回客觀事實。適合處理焦慮與具體擔憂。
+            </p>
+            <div class="file-tag">
+                <span><i class="fas fa-link mr-1"></i> 開啟實驗</span>
+                <span>CBT.html</span>
+            </div>
+        </a>
+
+        <!-- Experiment 2: DBT Only -->
+        <a href="DBT.html" class="card theme-dbt">
+            <div class="flex justify-between items-start">
+                <div class="icon-box">
+                    <i class="fas fa-heart-pulse"></i>
+                </div>
+                <span class="badge">Condition B</span>
+            </div>
+            <h2 class="card-title">DBT 情緒調節組</h2>
+            <p class="card-desc">
+                專注於「情緒接納與耐受」。<br>
+                優先進行同理與驗證，提供痛苦耐受技巧（TIPP/STOP）。適合處理高強度情緒困擾與崩潰感。
+            </p>
+            <div class="file-tag">
+                <span><i class="fas fa-link mr-1"></i> 開啟實驗</span>
+                <span>DBT.html</span>
+            </div>
+        </a>
+
+        <!-- Experiment 3: Integrated (MVP) -->
+        <a href="CBT_DBT_integrate.html" class="card theme-smart">
+            <div class="flex justify-between items-start">
+                <div class="icon-box">
+                    <i class="fas fa-robot"></i>
+                </div>
+                <span class="badge">Condition C (MVP)</span>
+            </div>
+            <h2 class="card-title">智慧整合組 (CBT + DBT)</h2>
+            <p class="card-desc">
+                <strong>推薦測試版本。</strong><br>
+                內建「情緒溫度計」機制。根據使用者當下的痛苦指數（SUDS），動態切換 CBT（理性引導）或 DBT（情緒急救）策略。
+            </p>
+            <div class="file-tag">
+                <span><i class="fas fa-star mr-1 text-yellow-400"></i> 開啟實驗</span>
+                <span>CBT_DBT_integrate.html</span>
+            </div>
+        </a>
+
+        <!-- Experiment 4: Control Group -->
+        <a href="general.html" class="card theme-control">
+            <div class="flex justify-between items-start">
+                <div class="icon-box">
+                    <i class="fas fa-mug-hot"></i>
+                </div>
+                <span class="badge">Control Group</span>
+            </div>
+            <h2 class="card-title">一般陪伴組 (對照組)</h2>
+            <p class="card-desc">
+                基礎基準線（Baseline）。<br>
+                僅提供基礎的傾聽、陪伴與同理回應。不包含任何特定的心理治療架構介入。用於比較治療效果的差異。
+            </p>
+            <div class="file-tag">
+                <span><i class="fas fa-link mr-1"></i> 開啟實驗</span>
+                <span>general.html</span>
+            </div>
+        </a>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="text-center mt-16 text-gray-400 text-xs">
+        <p>© 2024 NYCU CIRDA Lab. Consultation Web App MVP.</p>
+    </footer>
+
+</body>
+</html>
