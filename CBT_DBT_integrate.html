@@ -8,7 +8,9 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Font Awesome for Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
+    <!-- Puter.js for AI API -->
+    <script src="https://js.puter.com/v2/"></script>
+
     <style>
         /* =========================================
            Global & Reset
@@ -359,40 +361,43 @@
         - 根據使用者的文字自動切換 CBT/DBT，不需要告訴使用者「我現在要用 CBT 了」。
         `;
 
-        const apiKey = ""; 
-
-        let apiChatHistory = [
-            { role: "user", parts: [{ text: "系統設定：我們是好朋友，請用繁體中文對話。" }] },
-            { role: "model", parts: [{ text: "好的，我會當你的好朋友陪你聊聊。" }] }
-        ];
+        let apiChatHistory = [];
 
         let exportHistory = [];
 
         async function callGeminiAPI(userMessage) {
-            apiChatHistory.push({ role: "user", parts: [{ text: userMessage }] });
-
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
-            
-            const payload = {
-                contents: apiChatHistory,
-                systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] }
-            };
+            // 建立訊息陣列，包含系統提示
+            const messages = [
+                { role: "system", content: SYSTEM_PROMPT },
+                ...apiChatHistory,
+                { role: "user", content: userMessage }
+            ];
 
             try {
-                const response = await fetch(url, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
+                const response = await puter.ai.chat(messages, {
+                    model: 'gemini-3-pro-preview'
                 });
 
-                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-                const data = await response.json();
-                const aiText = data.candidates[0].content.parts[0].text;
-                apiChatHistory.push({ role: "model", parts: [{ text: aiText }] });
+                // 更新對話歷史
+                apiChatHistory.push({ role: "user", content: userMessage });
+
+                // 處理回應 - Puter.js 回傳的可能是字串或物件
+                let aiText;
+                if (typeof response === 'string') {
+                    aiText = response;
+                } else if (response?.message?.content) {
+                    aiText = response.message.content;
+                } else if (response?.content) {
+                    aiText = response.content;
+                } else {
+                    aiText = String(response);
+                }
+
+                apiChatHistory.push({ role: "assistant", content: aiText });
                 return aiText;
             } catch (error) {
-                console.error("API Call Failed:", error);
-                return "（網路連線不穩，請稍後再試...）";
+                console.error("Puter AI API Call Failed:", error);
+                return "（連線發生問題，請稍後再試...）";
             }
         }
 
