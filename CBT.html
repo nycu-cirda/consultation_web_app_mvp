@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>諮心好友 - CBT 整合版 (CBT Group)</title>
+    <!-- Tailwind CSS for layout utilities -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        /* =========================================
+           Global & Reset
+           ========================================= */
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: #f0f2f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            font-family: Roboto, -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+            overflow: hidden;
+        }
+
+        /* =========================================
+           Pixel 7 Frame Design
+           ========================================= */
+        .pixel-7-frame {
+            width: 390px;
+            height: 820px;
+            background-color: #121212;
+            border-radius: 48px;
+            padding: 14px; /* Bezel */
+            box-shadow: 
+                0 0 0 2px #333,
+                25px 30px 70px rgba(0,0,0,0.5),
+                inset 0 0 0 1px rgba(255,255,255,0.1);
+            position: relative;
+            z-index: 10;
+        }
+
+        /* Physical Buttons */
+        .pixel-7-frame::before {
+            content: ''; position: absolute; right: -3px; top: 180px;
+            width: 4px; height: 60px; background: #2a2a2a; border-radius: 0 4px 4px 0;
+        }
+        .pixel-7-frame::after {
+            content: ''; position: absolute; right: -3px; top: 260px;
+            width: 4px; height: 100px; background: #2a2a2a; border-radius: 0 4px 4px 0;
+        }
+
+        /* Screen Area */
+        .screen {
+            width: 100%;
+            height: 100%;
+            background-color: #9BBBD4; /* LINE Background */
+            border-radius: 34px; /* Curve matching bezel */
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Camera Punch-hole */
+        .camera-hole {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 18px;
+            height: 18px;
+            background-color: #000;
+            border-radius: 50%;
+            z-index: 100;
+        }
+
+        /* =========================================
+           UI Components
+           ========================================= */
+        
+        .status-bar {
+            height: 48px;
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 24px;
+            padding-top: 12px;
+            color: #1f1f1f;
+            font-size: 13px;
+            font-weight: 500;
+            z-index: 50;
+        }
+        
+        .status-icons { display: flex; gap: 6px; align-items: center; }
+        .status-icons svg { fill: #1f1f1f; height: 14px; }
+
+        .line-header {
+            height: 56px;
+            background-color: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(5px);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 16px;
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+            z-index: 40;
+            color: #111;
+        }
+
+        .chat-title { font-size: 17px; font-weight: 700; color: #111; margin-left: 8px; }
+
+        .chat-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+            padding-bottom: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            scroll-behavior: smooth;
+        }
+        .chat-container::-webkit-scrollbar { width: 4px; }
+        .chat-container::-webkit-scrollbar-thumb { background-color: rgba(0,0,0,0.1); border-radius: 2px; }
+
+        .message-row { display: flex; align-items: flex-end; width: 100%; }
+        .message-row.user { justify-content: flex-end; }
+        .message-row.ai { justify-content: flex-start; }
+
+        .avatar {
+            width: 38px; height: 38px;
+            border-radius: 50%; background-color: #fff;
+            margin-right: 8px; flex-shrink: 0;
+            border: 1px solid #eee;
+            display: flex; align-items: center; justify-content: center;
+        }
+
+        .bubble {
+            max-width: 72%; padding: 10px 14px;
+            border-radius: 20px; font-size: 15px; line-height: 1.5;
+            position: relative; word-break: break-word;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        }
+
+        .ai .bubble { background-color: #ffffff; color: #111; border-top-left-radius: 4px; }
+        .user .bubble { background-color: #8DE07D; color: #000; border-top-right-radius: 4px; }
+
+        .timestamp {
+            font-size: 10px; color: #666; margin: 0 6px; margin-bottom: 2px; min-width: 30px;
+        }
+        .user .timestamp { text-align: right; }
+
+        /* =========================================
+           Input Area - FIX V7
+           ========================================= */
+        .input-area-wrapper {
+            background-color: #ffffff;
+            width: 100%;
+            padding-bottom: 35px; /* Safe area for bottom curve */
+            z-index: 50;
+            position: relative;
+            border-top: 1px solid #eee;
+        }
+
+        .input-area-content {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 20px 0 20px; 
+            width: 100%;
+        }
+
+        .input-field {
+            flex: 1;
+            min-width: 0;
+            background-color: #f2f2f2;
+            border: none;
+            border-radius: 20px;
+            padding: 10px 16px;
+            font-size: 16px;
+            outline: none;
+            max-height: 100px;
+            color: #111;
+        }
+
+        .icon-btn {
+            color: #111;
+            font-size: 24px;
+            cursor: pointer;
+            padding: 4px;
+            flex-shrink: 0;
+            width: 32px;
+            text-align: center;
+        }
+
+        .action-btn-container {
+            width: 40px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-shrink: 0;
+            margin-right: 5px; 
+        }
+
+        .send-btn {
+            color: #1d6fce; 
+            font-size: 24px;
+            cursor: pointer;
+            display: none;
+        }
+        
+        #stickerBtn { display: block; }
+        .send-btn.active { display: block; }
+
+        .home-indicator {
+            position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%);
+            width: 108px; height: 4px; background-color: #000; opacity: 0.2;
+            border-radius: 2px; pointer-events: none; z-index: 60;
+        }
+
+        .typing { display: flex; gap: 4px; padding: 6px 4px; }
+        .typing span {
+            width: 6px; height: 6px; background: #bbb; border-radius: 50%;
+            animation: bounce 1.4s infinite ease-in-out both;
+        }
+        .typing span:nth-child(1) { animation-delay: -0.32s; }
+        .typing span:nth-child(2) { animation-delay: -0.16s; }
+        @keyframes bounce { 0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1); } }
+    </style>
+</head>
+<body>
+
+    <div class="pixel-7-frame">
+        <div class="camera-hole"></div>
+
+        <div class="screen">
+            <div class="status-bar">
+                <span id="clock" class="font-medium">10:30</span>
+                <div class="status-icons">
+                    <svg viewBox="0 0 24 24"><path d="M2 22h20V2L2 22z"/></svg>
+                    <svg viewBox="0 0 24 24"><path d="M12.01 21.49L23.64 7c-.45-.34-4.93-4-11.64-4C5.28 3 .81 6.66.36 7l11.63 14.49.01.01.01-.01z"/></svg>
+                    <svg viewBox="0 0 24 24"><path d="M15.67 4H14V2h-4v2H8.33C7.6 4 7 4.6 7 5.33v15.33C7 21.4 7.6 22 8.33 22h7.33c.74 0 1.34-.6 1.34-1.33V5.33C17 4.6 16.4 4 15.67 4z"/></svg>
+                </div>
+            </div>
+
+            <div class="line-header">
+                <i class="fas fa-chevron-left text-xl cursor-pointer opacity-70"></i>
+                <div class="chat-title flex items-center">
+                    諮心好友 (CBT版)
+                    <i class="fas fa-volume-mute text-xs ml-2 text-gray-400"></i>
+                </div>
+                <div class="flex gap-5 opacity-80">
+                    <i class="fas fa-search text-lg cursor-pointer"></i>
+                    <i class="fas fa-bars text-lg cursor-pointer" id="menuBtn" title="匯出紀錄"></i>
+                </div>
+            </div>
+
+            <div class="chat-container" id="chatContainer">
+                <div class="flex justify-center my-2 opacity-60">
+                    <div class="bg-black/10 text-white text-[10px] px-2 py-1 rounded-full">今天</div>
+                </div>
+
+                <div class="message-row ai">
+                    <div class="avatar"><i class="fas fa-robot text-gray-600"></i></div>
+                    <div class="flex flex-col">
+                        <div class="text-[10px] text-gray-500 mb-1 ml-1">諮心好友 (CBT)</div>
+                        <div class="flex items-end">
+                            <div class="bubble">
+                                哈囉！我是你的諮心好友👋<br>最近學校生活還好嗎？不管是課業、分組、還是感情的事，如果有什麼讓你覺得卡卡的、壓力很大的想法，都可以跟我說，我們一起來拆解看看！
+                            </div>
+                            <div class="timestamp">10:30</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="input-area-wrapper">
+                <div class="input-area-content">
+                    <i class="fas fa-plus icon-btn"></i>
+                    <i class="fas fa-camera icon-btn"></i>
+                    <i class="fas fa-image icon-btn"></i>
+                    
+                    <input type="text" id="userInput" class="input-field" placeholder="輸入訊息..." autocomplete="off">
+                    
+                    <div class="action-btn-container">
+                        <i class="fas fa-face-smile icon-btn" id="stickerBtn"></i>
+                        <i class="fas fa-paper-plane send-btn" id="sendBtn"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div class="home-indicator"></div>
+        </div>
+    </div>
+
+    <script>
+        // ==========================================
+        //  CBT SYSTEM PROMPT (VERSION 2: CBT INTEGRATION)
+        // ==========================================
+        const SYSTEM_PROMPT = `
+        你是一個名為「諮心好友」的 AI 聊天機器人，專為台灣的大學生設計，且核心架構基於【認知行為治療 (CBT)】。
+
+        【角色定位】
+        你是一位像學長姐一樣親切，但具備 CBT 專業知識的夥伴。你的目標不只是傾聽，更要引導學生發現並挑戰他們導致痛苦的「非理性信念」或「認知扭曲」。
+
+        【語言風格】
+        1. **台灣大學生語境**：使用「早八」、「被當」、「二一」、「雷隊友」、「系上」、「教授」、「通識」、「分組」等詞彙。
+        2. **親切但不失專業**：語氣輕鬆，但在進行 CBT 介入時要邏輯清晰。
+
+        【核心任務 - CBT 三步驟迴圈】
+        當使用者表達負面情緒時，請依照以下步驟進行（不要一次做完，要分次對話引導）：
+
+        **Step 1: 識別自動化思考 (Identificaiton)**
+        - 協助使用者釐清：
+          A (事件)：發生了什麼事？ (例如：考差了)
+          B (想法)：你當下腦中閃過的第一個念頭是什麼？ (例如：我完蛋了，我是廢物)
+          C (情緒)：這讓你感覺如何？ (例如：焦慮、絕望)
+        - *話術範例*：「聽起來這真的很煩。當你看到成績的那一瞬間，腦袋裡第一個冒出來的想法是什麼？」
+
+        **Step 2: 標記認知扭曲 (Labeling)**
+        - 辨識使用者的話語中是否包含以下扭曲，並溫柔地指出：
+          (1) **災難化思考** (把小事想成世界末日，如：這次考差 = 人生毀了)。
+          (2) **全有全無** (非黑即白，如：沒拿 A 就是失敗)。
+          (3) **過度類化** (如：這組員雷 = 所有人都會背叛我)。
+          (4) **讀心術** (如：教授一定覺得我很笨)。
+          (5) **個人化** (如：氣氛尷尬一定是因為我)。
+        - *話術範例*：「我在想，這會不會有點像我們常說的『災難化思考』？好像把這一次的失敗看成了永遠的失敗？」
+
+        **Step 3: 蘇格拉底式提問 (Socratic Questioning)**
+        - 引導使用者找證據反駁負面想法。不要直接給答案，要用問的：
+          - 「有什麼證據支持這個想法？有什麼證據反對它？」
+          - 「如果你的好朋友發生一樣的事，你會怎麼跟他說？」
+          - 「最壞的情況真的是那樣嗎？發生的機率有多少？」
+        - *話術範例*：「除了覺得自己很廢之外，有沒有其他可能的解釋？比如說題目真的太難，或是最近活動太多太累？」
+
+        **Step 4: 建立替代性想法 (Restructuring)**
+        - 引導使用者發展一個更平衡、更真實的想法。
+        - *話術範例*：「如果我們把『我是廢物』改成『我這次沒考好，但我還有機會補救，或者下次調整讀書方法』，你的焦慮感會不會從 10 分降到 6 分？」
+
+        【安全邊界 (Guardrails)】
+        - 即使是 CBT 模式，若偵測到「想死」、「自殺」、「自傷」、「活著沒意義」等高風險關鍵字，必須 **立即停止 CBT 辯證**。
+        - 改為：「我感覺到你現在非常痛苦，這已經超過了我能幫忙的範圍。請你一定要尋求專業協助，或是現在就打給學校的心輔中心好嗎？」
+
+        【操作守則】
+        - 每次回覆保持簡短，不要一次長篇大論講完 CBT 理論。
+        - 保持好奇心，多問「然後呢？」、「你的想法是？」。
+        - 先同理（Validation），再質疑（Challenge）。沒有同理的質疑會讓人生氣。
+        `;
+
+        const apiKey = ""; 
+
+        let apiChatHistory = [
+            { role: "user", parts: [{ text: "系統設定：我們是好朋友，請用繁體中文對話。" }] },
+            { role: "model", parts: [{ text: "好的，我會當你的好朋友陪你聊聊。" }] }
+        ];
+
+        let exportHistory = [];
+
+        async function callGeminiAPI(userMessage) {
+            apiChatHistory.push({ role: "user", parts: [{ text: userMessage }] });
+
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+            
+            const payload = {
+                contents: apiChatHistory,
+                systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] }
+            };
+
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                const data = await response.json();
+                const aiText = data.candidates[0].content.parts[0].text;
+                apiChatHistory.push({ role: "model", parts: [{ text: aiText }] });
+                return aiText;
+            } catch (error) {
+                console.error("API Call Failed:", error);
+                return "（網路連線不穩，請稍後再試...）";
+            }
+        }
+
+        const chatContainer = document.getElementById('chatContainer');
+        const userInput = document.getElementById('userInput');
+        const sendBtn = document.getElementById('sendBtn');
+        const stickerBtn = document.getElementById('stickerBtn');
+        const menuBtn = document.getElementById('menuBtn');
+        const clockEl = document.getElementById('clock');
+
+        function updateClock() {
+            const now = new Date();
+            clockEl.textContent = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
+        }
+        setInterval(updateClock, 60000);
+        updateClock();
+
+        function scrollToBottom() {
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        function markedText(text) {
+            return text.replace(/\n/g, '<br>').replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
+        }
+
+        function appendMessage(text, sender) {
+            const div = document.createElement('div');
+            div.className = `message-row ${sender}`;
+            const time = new Date().getHours().toString().padStart(2, '0') + ':' + new Date().getMinutes().toString().padStart(2, '0');
+            
+            exportHistory.push({ sender, text, time });
+
+            if (sender === 'ai') {
+                div.innerHTML = `
+                    <div class="avatar"><i class="fas fa-robot text-gray-600"></i></div>
+                    <div class="flex flex-col">
+                        <div class="text-[10px] text-gray-500 mb-1 ml-1">諮心好友 (CBT)</div>
+                        <div class="flex items-end">
+                            <div class="bubble">${markedText(text)}</div>
+                            <div class="timestamp">${time}</div>
+                        </div>
+                    </div>
+                `;
+            } else {
+                div.innerHTML = `
+                    <div class="flex items-end">
+                        <div class="timestamp">${time}</div>
+                        <div class="bubble">${markedText(text)}</div>
+                    </div>
+                `;
+            }
+            chatContainer.appendChild(div);
+            scrollToBottom();
+        }
+
+        function appendLoading() {
+            const div = document.createElement('div');
+            div.className = 'message-row ai';
+            div.id = 'loadingIndicator';
+            div.innerHTML = `
+                <div class="avatar"><i class="fas fa-robot text-gray-600"></i></div>
+                <div class="flex items-end">
+                    <div class="bubble">
+                        <div class="typing"><span></span><span></span><span></span></div>
+                    </div>
+                </div>
+            `;
+            chatContainer.appendChild(div);
+            scrollToBottom();
+        }
+
+        function removeLoading() {
+            const el = document.getElementById('loadingIndicator');
+            if (el) el.remove();
+        }
+
+        async function handleSend() {
+            const text = userInput.value.trim();
+            if (!text) return;
+
+            userInput.value = '';
+            toggleSendButton();
+            appendMessage(text, 'user');
+            appendLoading();
+
+            const aiResponse = await callGeminiAPI(text);
+            removeLoading();
+            appendMessage(aiResponse, 'ai');
+        }
+
+        function toggleSendButton() {
+            if (userInput.value.trim().length > 0) {
+                sendBtn.style.display = 'block';
+                stickerBtn.style.display = 'none';
+            } else {
+                sendBtn.style.display = 'none';
+                stickerBtn.style.display = 'block';
+            }
+        }
+
+        userInput.addEventListener('input', toggleSendButton);
+        sendBtn.addEventListener('click', handleSend);
+
+        userInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                if (e.shiftKey) return;
+                e.preventDefault();
+                if (e.isComposing) return;
+                handleSend();
+            }
+        });
+
+        menuBtn.addEventListener('click', () => {
+            if (exportHistory.length === 0) {
+                alert("目前沒有對話紀錄");
+                return;
+            }
+            const blob = new Blob([JSON.stringify(exportHistory, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `cbt_chat_history_${Date.now()}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+            alert("對話紀錄已下載！");
+        });
+
+    </script>
+</body>
+</html>

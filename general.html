@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>諮心好友 - 基礎對照組 (Baseline v7)</title>
+    <!-- Tailwind CSS for layout utilities -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        /* =========================================
+           Global & Reset
+           ========================================= */
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: #f0f2f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            font-family: Roboto, -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+            overflow: hidden;
+        }
+
+        /* =========================================
+           Pixel 7 Frame Design
+           ========================================= */
+        .pixel-7-frame {
+            width: 390px;
+            height: 820px;
+            background-color: #121212;
+            border-radius: 48px;
+            padding: 14px; /* Bezel */
+            box-shadow: 
+                0 0 0 2px #333,
+                25px 30px 70px rgba(0,0,0,0.5),
+                inset 0 0 0 1px rgba(255,255,255,0.1);
+            position: relative;
+            z-index: 10;
+        }
+
+        /* Physical Buttons */
+        .pixel-7-frame::before {
+            content: ''; position: absolute; right: -3px; top: 180px;
+            width: 4px; height: 60px; background: #2a2a2a; border-radius: 0 4px 4px 0;
+        }
+        .pixel-7-frame::after {
+            content: ''; position: absolute; right: -3px; top: 260px;
+            width: 4px; height: 100px; background: #2a2a2a; border-radius: 0 4px 4px 0;
+        }
+
+        /* Screen Area */
+        .screen {
+            width: 100%;
+            height: 100%;
+            background-color: #9BBBD4; /* LINE Background */
+            border-radius: 34px; /* Curve matching bezel */
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Camera Punch-hole */
+        .camera-hole {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 18px;
+            height: 18px;
+            background-color: #000;
+            border-radius: 50%;
+            z-index: 100;
+        }
+
+        /* =========================================
+           UI Components
+           ========================================= */
+        
+        .status-bar {
+            height: 48px;
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 24px;
+            padding-top: 12px;
+            color: #1f1f1f;
+            font-size: 13px;
+            font-weight: 500;
+            z-index: 50;
+        }
+        
+        .status-icons { display: flex; gap: 6px; align-items: center; }
+        .status-icons svg { fill: #1f1f1f; height: 14px; }
+
+        .line-header {
+            height: 56px;
+            background-color: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(5px);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 16px;
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+            z-index: 40;
+            color: #111;
+        }
+
+        .chat-title { font-size: 17px; font-weight: 700; color: #111; margin-left: 8px; }
+
+        .chat-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+            padding-bottom: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            scroll-behavior: smooth;
+        }
+        .chat-container::-webkit-scrollbar { width: 4px; }
+        .chat-container::-webkit-scrollbar-thumb { background-color: rgba(0,0,0,0.1); border-radius: 2px; }
+
+        .message-row { display: flex; align-items: flex-end; width: 100%; }
+        .message-row.user { justify-content: flex-end; }
+        .message-row.ai { justify-content: flex-start; }
+
+        .avatar {
+            width: 38px; height: 38px;
+            border-radius: 50%; background-color: #fff;
+            margin-right: 8px; flex-shrink: 0;
+            border: 1px solid #eee;
+            display: flex; align-items: center; justify-content: center;
+        }
+
+        .bubble {
+            max-width: 72%; padding: 10px 14px;
+            border-radius: 20px; font-size: 15px; line-height: 1.5;
+            position: relative; word-break: break-word;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        }
+
+        .ai .bubble { background-color: #ffffff; color: #111; border-top-left-radius: 4px; }
+        .user .bubble { background-color: #8DE07D; color: #000; border-top-right-radius: 4px; }
+
+        .timestamp {
+            font-size: 10px; color: #666; margin: 0 6px; margin-bottom: 2px; min-width: 30px;
+        }
+        .user .timestamp { text-align: right; }
+
+        /* =========================================
+           Input Area - FIX V7
+           ========================================= */
+        .input-area-wrapper {
+            background-color: #ffffff;
+            width: 100%;
+            /* Make sure the wrapper sits at the bottom but provides enough space */
+            padding-bottom: 35px; /* Safe area for bottom curve */
+            z-index: 50;
+            position: relative;
+            border-top: 1px solid #eee;
+        }
+
+        .input-area-content {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            /* Side padding increased to 20px to clear corner curves */
+            padding: 12px 20px 0 20px; 
+            width: 100%;
+        }
+
+        .input-field {
+            flex: 1; /* Grow to fill space */
+            min-width: 0; /* Allow shrinking */
+            background-color: #f2f2f2;
+            border: none;
+            border-radius: 20px;
+            padding: 10px 16px;
+            font-size: 16px;
+            outline: none;
+            max-height: 100px;
+            color: #111;
+        }
+
+        .icon-btn {
+            color: #111;
+            font-size: 24px;
+            cursor: pointer;
+            padding: 4px;
+            flex-shrink: 0; /* Do not shrink icons */
+            width: 32px; /* Fixed touch target */
+            text-align: center;
+        }
+
+        /* Send/Sticker Container to ensure they stay put */
+        .action-btn-container {
+            width: 40px; /* Fixed width area for the button */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-shrink: 0;
+            /* Force margin from right edge just in case */
+            margin-right: 5px; 
+        }
+
+        .send-btn {
+            color: #1d6fce; 
+            font-size: 24px;
+            cursor: pointer;
+            display: none;
+        }
+        
+        #stickerBtn { display: block; }
+        .send-btn.active { display: block; }
+
+        .home-indicator {
+            position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%);
+            width: 108px; height: 4px; background-color: #000; opacity: 0.2;
+            border-radius: 2px; pointer-events: none; z-index: 60;
+        }
+
+        .typing { display: flex; gap: 4px; padding: 6px 4px; }
+        .typing span {
+            width: 6px; height: 6px; background: #bbb; border-radius: 50%;
+            animation: bounce 1.4s infinite ease-in-out both;
+        }
+        .typing span:nth-child(1) { animation-delay: -0.32s; }
+        .typing span:nth-child(2) { animation-delay: -0.16s; }
+        @keyframes bounce { 0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1); } }
+    </style>
+</head>
+<body>
+
+    <div class="pixel-7-frame">
+        <div class="camera-hole"></div>
+
+        <div class="screen">
+            <div class="status-bar">
+                <span id="clock" class="font-medium">10:30</span>
+                <div class="status-icons">
+                    <svg viewBox="0 0 24 24"><path d="M2 22h20V2L2 22z"/></svg>
+                    <svg viewBox="0 0 24 24"><path d="M12.01 21.49L23.64 7c-.45-.34-4.93-4-11.64-4C5.28 3 .81 6.66.36 7l11.63 14.49.01.01.01-.01z"/></svg>
+                    <svg viewBox="0 0 24 24"><path d="M15.67 4H14V2h-4v2H8.33C7.6 4 7 4.6 7 5.33v15.33C7 21.4 7.6 22 8.33 22h7.33c.74 0 1.34-.6 1.34-1.33V5.33C17 4.6 16.4 4 15.67 4z"/></svg>
+                </div>
+            </div>
+
+            <div class="line-header">
+                <i class="fas fa-chevron-left text-xl cursor-pointer opacity-70"></i>
+                <div class="chat-title flex items-center">
+                    諮心好友 (對照組)
+                    <i class="fas fa-volume-mute text-xs ml-2 text-gray-400"></i>
+                </div>
+                <div class="flex gap-5 opacity-80">
+                    <i class="fas fa-search text-lg cursor-pointer"></i>
+                    <i class="fas fa-bars text-lg cursor-pointer" id="menuBtn" title="匯出紀錄"></i>
+                </div>
+            </div>
+
+            <div class="chat-container" id="chatContainer">
+                <div class="flex justify-center my-2 opacity-60">
+                    <div class="bg-black/10 text-white text-[10px] px-2 py-1 rounded-full">今天</div>
+                </div>
+
+                <div class="message-row ai">
+                    <div class="avatar"><i class="fas fa-robot text-gray-600"></i></div>
+                    <div class="flex flex-col">
+                        <div class="text-[10px] text-gray-500 mb-1 ml-1">諮心好友</div>
+                        <div class="flex items-end">
+                            <div class="bubble">
+                                哈囉！我是你的諮心好友👋<br>最近過得還好嗎？不管有什麼想說的，或是生活上遇到了什麼壓力，我都在這裡陪你聊聊。
+                            </div>
+                            <div class="timestamp">10:30</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Revised Input Area Structure -->
+            <div class="input-area-wrapper">
+                <div class="input-area-content">
+                    <i class="fas fa-plus icon-btn"></i>
+                    <i class="fas fa-camera icon-btn"></i>
+                    <i class="fas fa-image icon-btn"></i>
+                    
+                    <input type="text" id="userInput" class="input-field" placeholder="輸入訊息..." autocomplete="off">
+                    
+                    <div class="action-btn-container">
+                        <i class="fas fa-face-smile icon-btn" id="stickerBtn"></i>
+                        <i class="fas fa-paper-plane send-btn" id="sendBtn"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div class="home-indicator"></div>
+        </div>
+    </div>
+
+    <script>
+        const SYSTEM_PROMPT = `
+        你是一個名為「諮心好友」的 AI 聊天機器人，專為台灣的大學生設計。
+        
+        【角色定位】
+        你不是心理師，也不是治療師。你是一位溫暖、有同理心、願意傾聽的朋友。你的目的是提供一個安全的樹洞，讓學生宣洩壓力。
+
+        【核心任務 - 對照組模式】
+        1. **傾聽與陪伴**：這是你唯一的功能。專注於「積極傾聽」(Active Listening)。重述對方的感受，讓對方覺得被理解（Validation）。
+        2. **不提供解決方案**：除非使用者明確詢問，否則不要急著給建議。不要試圖「修復」使用者的問題，而是「陪伴」他們經歷情緒。
+        3. **禁止使用治療技術**：
+           - 嚴禁使用 CBT（認知行為治療）技術：不要分析認知扭曲、不要找證據、不要理性辯論。
+           - 嚴禁使用 DBT（辯證行為治療）技術：不要引導正念呼吸、不要教導痛苦耐受技巧。
+           - 嚴禁使用教練模式或指導語氣。
+        4. **語言風格**：
+           - 使用台灣大學生常用的口語（例如：真的假的、太扯了、辛苦了、抱抱）。
+           - 語氣輕鬆、自然，像 LINE 上的朋友聊天。
+           - 每次回覆盡量簡短（2-3句話為主），避免像教科書一樣說教。
+
+        【安全邊界】
+        - 如果使用者提到「想死」、「自殺」、「自傷」等高風險關鍵字：
+          請溫柔地回應：「聽起來你現在真的很痛苦，我很擔心你。雖然我只是機器人，但我希望能陪著你。如果這種感覺很強烈，你可以試著去學校諮商中心聊聊，或是撥打校安中心電話求助嗎？」
+        - 除此之外，保持一般朋友的傾聽角色。
+        `;
+
+        const apiKey = ""; 
+
+        let apiChatHistory = [
+            { role: "user", parts: [{ text: "系統設定：我們是好朋友，請用繁體中文對話。" }] },
+            { role: "model", parts: [{ text: "好的，我會當你的好朋友陪你聊聊。" }] }
+        ];
+
+        let exportHistory = [];
+
+        async function callGeminiAPI(userMessage) {
+            apiChatHistory.push({ role: "user", parts: [{ text: userMessage }] });
+
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+            
+            const payload = {
+                contents: apiChatHistory,
+                systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] }
+            };
+
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                const data = await response.json();
+                const aiText = data.candidates[0].content.parts[0].text;
+                apiChatHistory.push({ role: "model", parts: [{ text: aiText }] });
+                return aiText;
+            } catch (error) {
+                console.error("API Call Failed:", error);
+                return "（網路連線不穩，請稍後再試...）";
+            }
+        }
+
+        const chatContainer = document.getElementById('chatContainer');
+        const userInput = document.getElementById('userInput');
+        const sendBtn = document.getElementById('sendBtn');
+        const stickerBtn = document.getElementById('stickerBtn');
+        const menuBtn = document.getElementById('menuBtn');
+        const clockEl = document.getElementById('clock');
+
+        function updateClock() {
+            const now = new Date();
+            clockEl.textContent = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
+        }
+        setInterval(updateClock, 60000);
+        updateClock();
+
+        function scrollToBottom() {
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        function markedText(text) {
+            return text.replace(/\n/g, '<br>').replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
+        }
+
+        function appendMessage(text, sender) {
+            const div = document.createElement('div');
+            div.className = `message-row ${sender}`;
+            const time = new Date().getHours().toString().padStart(2, '0') + ':' + new Date().getMinutes().toString().padStart(2, '0');
+            
+            exportHistory.push({ sender, text, time });
+
+            if (sender === 'ai') {
+                div.innerHTML = `
+                    <div class="avatar"><i class="fas fa-robot text-gray-600"></i></div>
+                    <div class="flex flex-col">
+                        <div class="text-[10px] text-gray-500 mb-1 ml-1">諮心好友</div>
+                        <div class="flex items-end">
+                            <div class="bubble">${markedText(text)}</div>
+                            <div class="timestamp">${time}</div>
+                        </div>
+                    </div>
+                `;
+            } else {
+                div.innerHTML = `
+                    <div class="flex items-end">
+                        <div class="timestamp">${time}</div>
+                        <div class="bubble">${markedText(text)}</div>
+                    </div>
+                `;
+            }
+            chatContainer.appendChild(div);
+            scrollToBottom();
+        }
+
+        function appendLoading() {
+            const div = document.createElement('div');
+            div.className = 'message-row ai';
+            div.id = 'loadingIndicator';
+            div.innerHTML = `
+                <div class="avatar"><i class="fas fa-robot text-gray-600"></i></div>
+                <div class="flex items-end">
+                    <div class="bubble">
+                        <div class="typing"><span></span><span></span><span></span></div>
+                    </div>
+                </div>
+            `;
+            chatContainer.appendChild(div);
+            scrollToBottom();
+        }
+
+        function removeLoading() {
+            const el = document.getElementById('loadingIndicator');
+            if (el) el.remove();
+        }
+
+        async function handleSend() {
+            const text = userInput.value.trim();
+            if (!text) return;
+
+            userInput.value = '';
+            toggleSendButton();
+            appendMessage(text, 'user');
+            appendLoading();
+
+            const aiResponse = await callGeminiAPI(text);
+            removeLoading();
+            appendMessage(aiResponse, 'ai');
+        }
+
+        function toggleSendButton() {
+            if (userInput.value.trim().length > 0) {
+                sendBtn.style.display = 'block';
+                stickerBtn.style.display = 'none';
+            } else {
+                sendBtn.style.display = 'none';
+                stickerBtn.style.display = 'block';
+            }
+        }
+
+        userInput.addEventListener('input', toggleSendButton);
+        sendBtn.addEventListener('click', handleSend);
+
+        userInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                if (e.shiftKey) return;
+                e.preventDefault();
+                if (e.isComposing) return;
+                handleSend();
+            }
+        });
+
+        menuBtn.addEventListener('click', () => {
+            if (exportHistory.length === 0) {
+                alert("目前沒有對話紀錄");
+                return;
+            }
+            const blob = new Blob([JSON.stringify(exportHistory, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `baseline_chat_history_${Date.now()}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+            alert("對話紀錄已下載！");
+        });
+
+    </script>
+</body>
+</html>
